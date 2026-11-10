@@ -1,0 +1,71 @@
+# MediaPipe hand: the 21 landmarks the mediapipe-hand package emits.
+#
+# Pair this with mediapipe_hand.mipk, whose landmark stage runs once per hand
+# the palm detector found, so two hands come back as two subjects.
+#
+# The numbering and the connections are MediaPipe's own HAND_CONNECTIONS: the
+# wrist is 0, then thumb, index, middle, ring and little finger, four points
+# each from the knuckle outwards.  A finger gets its own colour, which is what
+# makes a curled finger readable when it crosses another.
+#
+# One caveat: the landmark model scores the hand, not the point, so every
+# keypoint of a hand carries the same confidence.  A per-point min= therefore
+# takes all 21 or none, unlike a YOLO pose model where it works point by
+# point.
+
+name hand
+keypoints 21
+
+group palm color=d0d0d0 size=6 width=2
+  point  0 wrist
+  bone wrist        thumb_cmc
+  bone wrist        index_mcp
+  bone index_mcp    middle_mcp
+  bone middle_mcp   ring_mcp
+  bone ring_mcp     little_mcp
+  bone little_mcp   wrist
+
+group thumb color=ff4040 size=5
+  point  1 thumb_cmc
+  point  2 thumb_mcp
+  point  3 thumb_ip
+  point  4 thumb_tip size=9
+  bone thumb_cmc thumb_mcp
+  bone thumb_mcp thumb_ip
+  bone thumb_ip  thumb_tip
+
+group index color=ffa040 size=5
+  point  5 index_mcp
+  point  6 index_pip
+  point  7 index_dip
+  point  8 index_tip size=9
+  bone index_mcp index_pip
+  bone index_pip index_dip
+  bone index_dip index_tip
+
+group middle color=40e060 size=5
+  point  9 middle_mcp
+  point 10 middle_pip
+  point 11 middle_dip
+  point 12 middle_tip size=9
+  bone middle_mcp middle_pip
+  bone middle_pip middle_dip
+  bone middle_dip middle_tip
+
+group ring color=40a0ff size=5
+  point 13 ring_mcp
+  point 14 ring_pip
+  point 15 ring_dip
+  point 16 ring_tip size=9
+  bone ring_mcp ring_pip
+  bone ring_pip ring_dip
+  bone ring_dip ring_tip
+
+group little color=ff40c8 size=5
+  point 17 little_mcp
+  point 18 little_pip
+  point 19 little_dip
+  point 20 little_tip size=9
+  bone little_mcp little_pip
+  bone little_pip little_dip
+  bone little_dip little_tip

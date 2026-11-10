@@ -1,0 +1,70 @@
+config HAND_GIMBAL_MODEL_PATH
+    string "Model package path"
+    default "./mediapipe_hand.mipk"
+
+config HAND_GIMBAL_RTSP_PORT
+    int "RTSP port"
+    default 8554
+    range 1 65535
+    help
+      The annotated video is served at rtsp://<board>:<port>/live.
+
+config HAND_GIMBAL_GOP
+    int "H264 keyframe interval in frames"
+    default 30
+    range 1 600
+
+config HAND_GIMBAL_REPORT_INTERVAL
+    int "State report interval in frames"
+    default 30
+    range 1 1000000
+
+config HAND_GIMBAL_CLOSE_PERCENT
+    int "Pinch close threshold (percent of palm width)"
+    default 45
+    range 1 400
+    help
+      Thumb tip to index tip distance, as a percentage of the index-to-pinky
+      knuckle span, below which the fingers count as touching.
+
+config HAND_GIMBAL_OPEN_PERCENT
+    int "Pinch release threshold (percent of palm width)"
+    default 70
+    range 1 400
+    help
+      The same ratio above which the pinch is released. Must exceed the close
+      threshold; the gap between them is the hysteresis band.
+
+config HAND_GIMBAL_EXTENSION_PERCENT
+    int "Required finger extension (percent of palm length)"
+    default 110
+    range 1 400
+    help
+      Shortest of the middle, ring and pinky reach from the wrist, over the
+      wrist-to-middle-knuckle length. A closed fist stays below this, which is
+      what separates a pinch from a fist.
+
+config HAND_GIMBAL_STRAIGHT_PERCENT
+    int "Required finger straightness (percent)"
+    default 85
+    range 1 100
+    help
+      Knuckle to tip over the length of the finger walked joint by joint,
+      taking the least straight of the middle, ring and pinky. This rejects a
+      pinch made with the other fingers curled. Run with --trace to see what
+      a real hand measures.
+
+config HAND_GIMBAL_CONFIRM_FRAMES
+    int "Frames required to change pinch state"
+    default 2
+    range 1 60
+
+config HAND_GIMBAL_PINCH_FRAMES
+    int "Frames a pinch must hold before the mount follows"
+    default 5
+    range 1 60
+    depends on SERVO_TRACKER
+    help
+      The skeleton turns red as soon as the pinch is confirmed; only the
+      servos wait this long, so a pinch made in passing never moves the
+      mount. Letting go releases the mount at once.

@@ -1,0 +1,17 @@
+config MIPK_OBJECT_DETECTION_MODEL_PATH
+    string "Default video model path"
+    default "./yolo11n.mipk"
+
+config MIPK_OBJECT_DETECTION_HOST
+    string "H264 UDP destination"
+    default "192.168.137.1"
+
+config MIPK_OBJECT_DETECTION_PORT
+    int "H264 UDP port"
+    default 9000
+    range 1 65535
+
+config MIPK_OBJECT_DETECTION_REPORT_INTERVAL
+    int "Result report interval"
+    default 30
+    range 1 1000000

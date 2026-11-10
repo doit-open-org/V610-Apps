@@ -1,0 +1,12 @@
+CONFIG_MIPK_VIDEO=y
+# The MediaPipe palm and hand landmark decoders, from mipk_extra_module.
+CONFIG_MIPK_EXTRA_MEDIAPIPE_HAND=y
+CONFIG_SERVO_TRACKER=y
+CONFIG_SERVO_TRACKER_PAN_INVERT=y
+# Tuned for MG90S servos, at about 18 inference frames a second with a hand.
+CONFIG_SERVO_TRACKER_STEP_PERCENT=10
+CONFIG_SERVO_TRACKER_GAIN_PERCENT=100
+CONFIG_SERVO_TRACKER_MAX_SPEED_PERCENT=100
+CONFIG_SERVO_TRACKER_SLEW_PERCENT=50
+# Tilt reads a third larger than pan on a 4:3 frame, so it gets its own step.
+CONFIG_SERVO_TRACKER_TILT_STEP_PERCENT=5

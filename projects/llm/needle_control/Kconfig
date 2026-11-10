@@ -1,0 +1,21 @@
+config NEEDLE_CONTROL_MODEL_PATH
+    string "Needle 3 model path"
+    default "./needle3-l8.cact"
+    help
+      An 8 layer slice of needle3.cact, made by tools/prepare_model.sh.
+
+config NEEDLE_CONTROL_TOOLS_PATH
+    string "Tool schema path"
+    default "./tools.json"
+
+config NEEDLE_CONTROL_HTTP_PORT
+    int "HTTP port, 0 to disable"
+    default 8080
+    range 0 65535
+    help
+      Requests are POST /command with a JSON body {"text": "..."}.
+
+config NEEDLE_CONTROL_MAX_TOKENS
+    int "Most tokens generated per request"
+    default 64
+    range 16 512

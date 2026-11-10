@@ -1,0 +1,12 @@
+CONFIG_MIPK_VIDEO=y
+CONFIG_MIPK_KEYPOINTS_MODEL_PATH="./person_pose.mipk"
+CONFIG_MIPK_KEYPOINTS_LAYOUT="./coco.keypoints"
+CONFIG_MIPK_KEYPOINTS_HOST="192.168.137.1"
+CONFIG_MIPK_KEYPOINTS_PORT=9000
+CONFIG_MIPK_KEYPOINTS_GOP=30
+CONFIG_MIPK_KEYPOINTS_REPORT_INTERVAL=30
+# Decoders for the two packages this application ships with: YOLO pose for the
+# person model (built into mipk) and the MediaPipe cascade for hands (from the
+# mipk_extra_module repository).
+CONFIG_MIPK_MODEL_YOLO_POSE=y
+CONFIG_MIPK_EXTRA_MEDIAPIPE_HAND=y

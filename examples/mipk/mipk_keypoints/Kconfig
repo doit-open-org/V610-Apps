@@ -1,0 +1,59 @@
+config MIPK_KEYPOINTS_LAYOUT
+    string "Default .keypoints file, empty for none"
+    default ""
+    help
+      Empty, and the sample marks every point where it lies in one colour,
+      which needs to know nothing about the subject and so suits any keypoint
+      model. Name a .keypoints file and it says which points to draw, in what
+      colour and size, and which of them to join into a pose.
+
+      The file also declares how many keypoints the model emits, so a
+      different model needs a different file rather than a rebuild. The ones
+      shipped beside the program are coco.keypoints for the default person
+      model and any stock yolo*-pose, hand.keypoints for the MediaPipe hand
+      cascade. --keypoints overrides this per run.
+
+config MIPK_KEYPOINTS_MODEL_PATH
+    string "Default video model path"
+    default "./person_pose.mipk"
+
+config MIPK_KEYPOINTS_HOST
+    string "H264 UDP destination"
+    default "192.168.137.1"
+
+config MIPK_KEYPOINTS_PORT
+    int "H264 UDP port"
+    default 9000
+    range 1 65535
+
+config MIPK_KEYPOINTS_GOP
+    int "H264 keyframe interval in frames"
+    default 30
+    range 1 600
+    help
+      One keyframe per second at 30 fps. A receiver cannot start decoding, or
+      recover from loss, until the next keyframe arrives.
+
+config MIPK_KEYPOINTS_REPORT_INTERVAL
+    int "Result report interval"
+    default 30
+    range 1 1000000
+
+config MIPK_KEYPOINTS_KEYPOINT_PERCENT
+    int "Keypoint visibility needed to draw it (percent)"
+    default 50
+    range 0 100
+    help
+      The model scores every keypoint for whether it is visible. A limb is
+      drawn only when both of its ends clear this, so a leg hidden behind the
+      body is left out rather than drawn to a guessed position. A .keypoints
+      file may set its own per point, and then this is only the fallback.
+
+config MIPK_KEYPOINTS_DRAW_BOX
+    bool "Draw the box around each subject"
+    default n
+    help
+      The points alone show where the subject is. The box is useful while
+      checking a model, because it shows the detection even when the
+      keypoints are too uncertain to draw.
+

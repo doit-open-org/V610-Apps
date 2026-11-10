@@ -1,0 +1,57 @@
+# COCO person: what every stock yolo*-pose model emits.
+#
+# Pair this with a model exported from yolo11n-pose.pt or similar, whose
+# manifest declares keypoint_count 17.
+#
+# The names and the 19 bones are COCO's own, as the person_keypoints
+# annotations declare them under categories[0].keypoints and .skeleton, and as
+# ultralytics/utils/plotting.py hard-codes them.
+#
+# Colours are by limb, so a limb crossing another stays readable.
+
+name person
+keypoints 17
+
+group arm_leg_left color=40a0ff size=5
+  point  5 left_shoulder
+  point  7 left_elbow
+  point  9 left_wrist
+  point 11 left_hip
+  point 13 left_knee
+  point 15 left_ankle
+  bone left_shoulder left_elbow
+  bone left_elbow    left_wrist
+  bone left_hip      left_knee
+  bone left_knee     left_ankle
+  bone left_ear      left_shoulder
+
+group arm_leg_right color=ffa040 size=5
+  point  6 right_shoulder
+  point  8 right_elbow
+  point 10 right_wrist
+  point 12 right_hip
+  point 14 right_knee
+  point 16 right_ankle
+  bone right_shoulder right_elbow
+  bone right_elbow    right_wrist
+  bone right_hip      right_knee
+  bone right_knee     right_ankle
+  bone right_ear      right_shoulder
+
+group torso color=40e060 size=5
+  bone left_shoulder right_shoulder
+  bone left_shoulder left_hip
+  bone right_shoulder right_hip
+  bone left_hip      right_hip
+
+group head color=ff40c8 size=5
+  point  0 nose
+  point  1 left_eye
+  point  2 right_eye
+  point  3 left_ear
+  point  4 right_ear
+  bone nose     left_eye
+  bone nose     right_eye
+  bone left_eye right_eye
+  bone left_eye left_ear
+  bone right_eye right_ear

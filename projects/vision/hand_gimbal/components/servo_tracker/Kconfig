@@ -1,0 +1,289 @@
+config SERVO_TRACKER
+    bool "Pan and tilt servo tracking"
+    default n
+    help
+      Turns a pan and tilt mount to keep the tracked hand in the middle of the
+      frame, driving hobby servos over the kernel's sysfs PWM interface.
+      Without it the application only watches; nothing moves.
+
+      Nothing reports where the mount is pointing, so the loop closes through
+      the camera: the error it drives to zero is how far the target sits from
+      the middle of the frame.
+
+if SERVO_TRACKER
+
+choice
+    prompt "Servo kind"
+    default SERVO_TRACKER_KIND_POSITIONAL
+    help
+      What the pulse width means to the servo, which is a property of the
+      hardware rather than a preference.
+
+config SERVO_TRACKER_KIND_POSITIONAL
+    bool "Positional (MG90S, SG90, most servos)"
+    help
+      The pulse is an angle. The servo goes there and holds it against its
+      internal potentiometer. The loop adds the frame's correction to the
+      angle it already holds, because commanding the angle proportionally to
+      the error would settle wherever the error balanced the gain and leave
+      the target permanently off centre.
+
+      Travel is finite, so set the span to the mount's real range: a servo
+      asked past its end stop stalls there and keeps drawing its stall
+      current, around 700 mA on an MG90S.
+
+config SERVO_TRACKER_KIND_CONTINUOUS
+    bool "Continuous rotation (360 degree, FS90R, modified servos)"
+    help
+      The pulse is a speed: the servo turns one way above neutral and the
+      other way below, faster the further from neutral, and reports nothing.
+      The mount's angle is the integral of that speed, so proportional control
+      alone leaves no steady state error.
+
+      These ignore pulses within a few tens of microseconds of neutral, so
+      set the dead band and the loop will step over it.
+
+endchoice
+
+config SERVO_TRACKER_PWM_DEVICE
+    string "PWM controller"
+    default "11080000.pwm"
+    help
+      The PWM block whose outputs drive the servos, named as the kernel names
+      the device. Its /sys/class/pwm/pwmchipN is found at startup by this
+      name, because N depends on the order the drivers probe in. 11080000.pwm
+      is PWM1, whose channel number is the N in PWM1_OUTN.
+
+      On the Cove-610 every PWM1 output lands on an LCD pin of the JP2 header:
+
+        channel  GPIO     JP2 pin  used by the LCD as
+        0        GPIO7_7  22       backlight (PWM1_OUT0)
+        1        GPIO1_0  21       TE, an output of the panel
+        2        GPIO1_2  24       reset
+        3        GPIO1_3  23       command/data select
+        4        GPIO1_1  26       SPI data
+        5        GPIO7_6  25       not used
+        6        GPIO7_5  28       SPI clock
+        7        GPIO7_4  27       SPI chip select
+
+      The defaults put pan on channel 5 and tilt on channel 1, which leave the
+      LCD driver's own pins alone. Channel 1 is the panel's TE output, so the
+      panel has to be unplugged while the servos run.
+
+config SERVO_TRACKER_PAN_ENABLE
+    bool "Drive the pan axis"
+    default y
+
+config SERVO_TRACKER_PAN_CHANNEL
+    int "Pan PWM channel"
+    default 5
+    depends on SERVO_TRACKER_PAN_ENABLE
+    help
+      Channel 5 is GPIO7_6, JP2 pin 25, which the LCD does not use.
+
+config SERVO_TRACKER_PAN_IOCFG
+    hex "Pan pin IO config register"
+    default 0x1113004C
+    depends on SERVO_TRACKER_PAN_ENABLE
+    help
+      Address of the register that muxes the pin, written once at startup
+      through /dev/mem. 0x1113004C is GPIO7_6. Set this to 0 when the board's
+      own device tree already muxes the pin.
+
+config SERVO_TRACKER_PAN_IOCFG_VALUE
+    hex "Pan pin IO config value"
+    default 0x1007
+    depends on SERVO_TRACKER_PAN_ENABLE
+    help
+      Bits 3:0 select the function, 7:4 the drive strength, 8 and 9 the pulls,
+      10 the slew rate, 12 the input enable. Function 7 is PWM1_OUT5 on this
+      pin.
+
+config SERVO_TRACKER_PAN_INVERT
+    bool "Reverse the pan direction"
+    default n
+    depends on SERVO_TRACKER_PAN_ENABLE
+    help
+      Set this if the mount turns away from the hand instead of towards it.
+      Which way a servo turns for a given pulse depends on how it is geared
+      and mounted, so this is quicker to try than rewiring.
+
+config SERVO_TRACKER_TILT_ENABLE
+    bool "Drive the tilt axis"
+    default y
+
+config SERVO_TRACKER_TILT_CHANNEL
+    int "Tilt PWM channel"
+    default 1
+    depends on SERVO_TRACKER_TILT_ENABLE
+    help
+      Channel 1 is GPIO1_0, JP2 pin 21, the LCD's TE line. Unplug the panel
+      first: TE is driven by the panel, and the two outputs would fight.
+
+config SERVO_TRACKER_TILT_IOCFG
+    hex "Tilt pin IO config register"
+    default 0x1113003C
+    depends on SERVO_TRACKER_TILT_ENABLE
+    help
+      0x1113003C is GPIO1_0. Set to 0 when the device tree already muxes it.
+
+config SERVO_TRACKER_TILT_IOCFG_VALUE
+    hex "Tilt pin IO config value"
+    default 0x1007
+    depends on SERVO_TRACKER_TILT_ENABLE
+    help
+      Function 7 is PWM1_OUT1 on this pin.
+
+config SERVO_TRACKER_TILT_INVERT
+    bool "Reverse the tilt direction"
+    default n
+    depends on SERVO_TRACKER_TILT_ENABLE
+
+config SERVO_TRACKER_PERIOD_US
+    int "PWM period in microseconds"
+    default 20000
+    range 1000 100000
+    help
+      20000 is the 50 Hz frame nearly every hobby servo expects. Digital
+      servos often accept 5000 (200 Hz), which tightens the loop, but check
+      the servo before changing this.
+
+config SERVO_TRACKER_NEUTRAL_US
+    int "Middle of the travel, in microseconds"
+    default 1500
+    range 500 3000
+    help
+      For a positional servo this is the angle the mount points straight on,
+      and where it starts and is parked. For a continuous one it is the pulse
+      at which the servo stops; if yours creeps while the frame is empty,
+      trim this by a few microseconds.
+
+config SERVO_TRACKER_SPAN_US
+    int "Half the travel, in microseconds"
+    default 500
+    range 50 1000
+    help
+      The pulse is kept within this far either side of neutral, so 500 around
+      a 1500 neutral means 1000 to 2000.
+
+      On a positional servo this is a mechanical limit, not a preference: it
+      has to be the range the MOUNT can reach, which is usually less than the
+      servo can. Find the real ends with tools/servo_test before widening it,
+      and start narrow. An MG90S reaches its full 180 degrees over roughly
+      500 to 2500 microseconds, but the mount will stop it well before that,
+      and the servo will stall against whatever stops it first.
+
+      On a continuous servo it is the offset at full speed, and lowering it
+      just caps how fast the mount can turn.
+
+config SERVO_TRACKER_DEAD_BAND_US
+    int "Servo dead band in microseconds"
+    default 40
+    range 0 300
+    depends on SERVO_TRACKER_KIND_CONTINUOUS
+    help
+      How far from neutral the pulse must be before the servo turns at all.
+      Commanding less than this only makes it buzz, so the loop steps over
+      the band rather than through it. Raise it if a stopped servo hums.
+
+config SERVO_TRACKER_STEP_PERCENT
+    int "Angle moved per frame at full command"
+    default 15
+    range 1 100
+    depends on SERVO_TRACKER_KIND_POSITIONAL
+    help
+      As a percentage of the span. This is the main control over how fast the
+      mount follows, and it is worth doing the arithmetic rather than
+      guessing, because three things divide into it.
+
+      Travel a second = span * this% * gain * frame rate. The gain is there
+      because the command only reaches 1 with the target right at the edge of
+      the frame, and the frame rate is the inference rate, not the camera's:
+      a frame with a hand in it costs around 55 ms here, so roughly 18 a
+      second rather than 30.
+
+      At 15%, a 500 us span and a gain of 100, that is 500 * 0.15 * 18 = 1350
+      us a second with the target at the edge, crossing the whole 1000 us
+      travel in about three quarters of a second. Lower it if the mount
+      overshoots and hunts around the target.
+
+config SERVO_TRACKER_RECENTRE_ON_LOSS
+    bool "Return to the middle when the target is lost"
+    default n
+    depends on SERVO_TRACKER_KIND_POSITIONAL
+    help
+      Off, the mount keeps pointing where it last saw the hand. On, it walks
+      back to the middle of its travel at the tracking rate. A continuous
+      servo cannot do this at all, having no position to return to.
+
+config SERVO_TRACKER_GAIN_PERCENT
+    int "Speed commanded with the target at the frame edge"
+    default 60
+    range 1 400
+    help
+      The proportional gain. Higher follows faster but overshoots, and the
+      mount then hunts around the target because the camera sees each
+      correction a frame late.
+
+config SERVO_TRACKER_DEAD_ZONE_PERCENT
+    int "Dead zone around the frame centre"
+    default 8
+    range 0 50
+    help
+      Half width of the region, as a percentage of half the frame, in which
+      the servos stop. Without it the mount twitches at every jitter of the
+      detection. Widen it if the mount never settles.
+
+config SERVO_TRACKER_PAN_SPAN_US
+    int "Pan travel override, in microseconds"
+    default 0
+    range 0 1000
+    depends on SERVO_TRACKER_PAN_ENABLE
+    help
+      Half the travel this axis is allowed, when the pan mount reaches less
+      far than the shared span. 0 uses the shared span.
+
+config SERVO_TRACKER_TILT_SPAN_US
+    int "Tilt travel override, in microseconds"
+    default 0
+    range 0 1000
+    depends on SERVO_TRACKER_TILT_ENABLE
+    help
+      Half the travel this axis is allowed. Tilt is usually the axis that
+      reaches less far than the servo does, so this is usually the one to
+      set. 0 uses the shared span.
+
+config SERVO_TRACKER_PAN_STEP_PERCENT
+    int "Pan step override"
+    default 0
+    range 0 100
+    depends on SERVO_TRACKER_PAN_ENABLE && SERVO_TRACKER_KIND_POSITIONAL
+    help
+      This axis's own per frame step. 0 uses the shared step.
+
+config SERVO_TRACKER_TILT_STEP_PERCENT
+    int "Tilt step override"
+    default 0
+    range 0 100
+    depends on SERVO_TRACKER_TILT_ENABLE && SERVO_TRACKER_KIND_POSITIONAL
+    help
+      This axis's own per frame step, for when tilt moves more sharply than
+      pan at the same setting. It usually does: the error is measured against
+      half the frame in each direction and the frame is wider than it is tall,
+      so on a 640 by 480 frame the same movement of the hand reads a third
+      larger vertically. 0 uses the shared step.
+
+config SERVO_TRACKER_MAX_SPEED_PERCENT
+    int "Command ceiling"
+    default 70
+    range 1 100
+
+config SERVO_TRACKER_SLEW_PERCENT
+    int "Largest speed change per frame"
+    default 25
+    range 1 100
+    help
+      Limits how abruptly the mount may change speed, which is what keeps the
+      loop's one frame of delay from turning into overshoot.
+
+endif

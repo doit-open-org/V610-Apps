@@ -1,0 +1,35 @@
+config MIPK_WAKE_WORD_MODEL_PATH
+    string "Default audio model path"
+    default "./okay_nabu.mipk"
+
+config MIPK_WAKE_WORD_HOST
+    string "Opus UDP destination"
+    default "192.168.137.1"
+
+config MIPK_WAKE_WORD_PORT
+    int "Opus UDP destination port"
+    default 9001
+    range 1 65535
+
+config MIPK_WAKE_WORD_RX_PORT
+    int "Opus UDP receive port"
+    default 9001
+    range 1 65535
+
+config MIPK_WAKE_WORD_MIC_GAIN_DB
+    int "Microphone input gain (dB)"
+    default 50
+    range -78 80
+
+config MIPK_WAKE_WORD_MIC_CHANNEL
+    int "Physical CODEC microphone channel (0=ADCL, 1=ADCR)"
+    default 0
+    range 0 1
+
+config MIPK_WAKE_WORD_ENABLE_AEC
+    bool "Enable TalkV2 acoustic echo cancellation"
+    default y
+
+config MIPK_WAKE_WORD_OPUS_BIT_RATE
+    int "Opus bit rate (bps)"
+    default 32000
